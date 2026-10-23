@@ -1,0 +1,5 @@
+# Same bytes on every system, so that every build is identical: Windows
+# checkouts must not turn the sources (and the embedded interface) into CRLF.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary

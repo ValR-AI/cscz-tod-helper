@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS:CZ ToD Helper</title>
+<link rel="icon" href="img/tiers/1.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <img src="img/logo.png" alt="Counter-Strike: Condition Zero" width="275" height="41">
+    <span class="brand-sub">ToD Helper</span>
+  </div>
+  <div class="bundlebar">
+    <label for="bundle-select">Bundle</label>
+    <select id="bundle-select"></select>
+    <button type="button" id="bundle-new" class="ghost">New</button>
+    <button type="button" id="bundle-rename" class="ghost">Rename</button>
+    <button type="button" id="bundle-delete" class="ghost">Delete</button>
+  </div>
+  <button type="button" id="watch-pill" class="watch-pill" title="Autosplitter"></button>
+  <button type="button" id="reset-btn" class="reset" title="Write every savestate of this bundle back to its original state">
+    <span class="reset-label">Reset bundle</span>
+    <span class="reset-sub" id="reset-sub"></span>
+  </button>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button type="button" role="tab" data-tab="savestates" aria-selected="true">Savestates</button>
+  <button type="button" role="tab" data-tab="autosplit" aria-selected="false">Autosplitter</button>
+  <button type="button" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+</nav>
+
+<main>
+  <!-- Savestates ------------------------------------------------------- -->
+  <section id="tab-savestates" class="tab">
+    <div id="setup-banner" class="banner" hidden>
+      <strong>First, tell the helper where your Save folder is.</strong>
+      It needs the folder holding your <code>CZProfile-*.czp</code> files to write savestates.
+      <button type="button" class="primary" data-goto="settings">Open settings</button>
+    </div>
+
+    <div class="workspace">
+      <aside class="list-panel">
+        <div class="panel-head">
+          <h2>Savestates</h2>
+          <button type="button" id="new-savestate" class="primary small">+ New</button>
+        </div>
+        <div class="panel-tools">
+          <button type="button" id="import-btn" class="ghost small" title="Turn profiles of your Save folder into savestates of this bundle">Import</button>
+          <button type="button" id="pack-btn" class="ghost small" title="Create a bundle with the 12 recommended savestates for one pseudo">ToD pack</button>
+        </div>
+        <ul id="savestate-list" class="ss-list"></ul>
+        <p id="list-empty" class="hint" hidden>This bundle is empty. Build your first savestate on the right.</p>
+      </aside>
+
+      <section class="editor" aria-label="Savestate builder">
+        <div class="editor-head">
+          <div class="field field-name">
+            <label for="f-name">Profile name <span class="hint-inline">= in-game player name</span></label>
+            <input id="f-name" maxlength="31" spellcheck="false" autocomplete="off" placeholder="e.g. ValR_Havana">
+            <small id="f-file" class="mono"></small>
+          </div>
+          <div class="field">
+            <span class="label">Difficulty</span>
+            <div class="seg" id="f-diff" role="radiogroup" aria-label="Difficulty">
+              <button type="button" role="radio" data-diff="easy">Easy</button>
+              <button type="button" role="radio" data-diff="normal">Normal</button>
+              <button type="button" role="radio" data-diff="hard">Hard</button>
+              <button type="button" role="radio" data-diff="expert">Expert</button>
+            </div>
+          </div>
+          <div class="toggles">
+            <label class="check"><input type="checkbox" id="f-ro"><span><b>Read-only</b><small>the game cannot overwrite it</small></span></label>
+            <label class="check"><input type="checkbox" id="f-all"><span><b>Full save</b><small>every map won, all difficulties</small></span></label>
+          </div>
+        </div>
+
+        <div class="stats" id="stats"></div>
+        <ul class="notices" id="notices"></ul>
+
+        <div class="section-head">
+          <h3>Progress</h3>
+          <p class="hint">Click a map to mark it won. <b>Start</b> picks the map preselected when you open the profile.</p>
+        </div>
+        <div class="tours" id="tours"></div>
+        <div class="map-detail" id="map-detail"></div>
+
+        <div class="section-head">
+          <h3>Team</h3>
+          <p class="hint">Teammates already hired when the profile opens. Leave it empty to hire them in the game.</p>
+        </div>
+        <div class="budget" id="budget"></div>
+        <div class="hired" id="hired"></div>
+        <div class="team-layout">
+          <div class="pool-wrap">
+            <div class="pool-head">
+              <div class="seg side-seg" id="side" role="radiogroup" aria-label="Operators shown">
+                <button type="button" role="radio" data-side="ct">Counter-Terrorists</button>
+                <button type="button" role="radio" data-side="t">Terrorists</button>
+              </div>
+              <p class="hint" id="pool-legend"></p>
+            </div>
+            <div class="pool" id="pool"></div>
+          </div>
+          <aside class="mate-detail" id="mate-detail" aria-live="polite"></aside>
+        </div>
+
+        <details class="advanced" id="advanced">
+          <summary>Advanced</summary>
+          <label class="check cheat"><input type="checkbox" id="f-cheat"><span><b>CHEAT: allow teammates from locked tiers</b>
+            <small>The game does not check the team stored in a profile, so you can hire teammates your reputation has not unlocked yet
+            (a tier 5 on Easy, for example). The team still has to fit in your points and in 5 slots.
+            Runs done with this are not legit.</small></span></label>
+        </details>
+
+        <div class="editor-actions">
+          <button type="button" id="save-btn" class="primary">Save savestate</button>
+          <button type="button" id="dup-btn" class="ghost">Duplicate</button>
+          <button type="button" id="del-btn" class="ghost danger-text">Delete</button>
+          <span id="editor-status" class="hint"></span>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- Autosplitter ----------------------------------------------------- -->
+  <section id="tab-autosplit" class="tab" hidden>
+    <div class="as-grid">
+      <section class="card">
+        <h3><span class="step">1</span> Connect your timer</h3>
+        <div class="seg timer-seg" id="timer-kind" role="radiogroup" aria-label="Timer">
+          <button type="button" role="radio" data-timer="livesplit">LiveSplit</button>
+          <button type="button" role="radio" data-timer="livesplit-one">LiveSplit One</button>
+        </div>
+        <div id="timer-livesplit" class="timer-panel">
+          <p>LiveSplit for Windows. Right-click the timer, then <b>Control &rsaquo; Start TCP Server</b>. Do it each time you open LiveSplit.</p>
+          <div class="row">
+            <label for="ls-addr" class="sr-only">LiveSplit address</label>
+            <input id="ls-addr" class="mono" spellcheck="false">
+            <button type="button" id="ls-save" class="ghost">Save</button>
+          </div>
+        </div>
+        <div id="timer-livesplit-one" class="timer-panel" hidden>
+          <p>LiveSplit One, desktop or web (Windows and Linux). Open its <b>Settings</b>, click <b>Connect to Server</b> and enter:</p>
+          <div class="row">
+            <code id="lso-url" class="copyable"></code>
+            <button type="button" id="lso-copy" class="ghost">Copy</button>
+          </div>
+          <p class="hint">The web version may ask to allow access to devices on your local network: allow it.</p>
+        </div>
+        <p id="ls-status" class="status-line"></p>
+      </section>
+      <section class="card">
+        <h3><span class="step">2</span> Pick the profile you run</h3>
+        <div class="row">
+          <label for="watch-profile" class="sr-only">Profile to watch</label>
+          <select id="watch-profile"></select>
+          <button type="button" id="watch-refresh" class="ghost">Refresh</button>
+        </div>
+        <p class="hint">The profile must not be read-only during the run, or the game cannot record your wins.</p>
+      </section>
+      <section class="card watch-card">
+        <h3><span class="step">3</span> Watch it</h3>
+        <button type="button" id="watch-toggle" class="primary big">Start watching</button>
+        <p class="hint">Start the timer yourself. Each time the game saves a newly won map, the helper splits. Your last map ends the run.</p>
+      </section>
+    </div>
+    <section class="card live" id="as-live"></section>
+    <section class="card">
+      <div class="panel-head"><h3>Log</h3><span class="hint">Also written to the helper's logs folder.</span></div>
+      <ol id="as-log" class="log"></ol>
+    </section>
+  </section>
+
+  <!-- Settings --------------------------------------------------------- -->
+  <section id="tab-settings" class="tab" hidden>
+    <section class="card">
+      <h3>Game Save folder</h3>
+      <p>The folder holding your <code>CZProfile-*.czp</code> files. It is usually
+        <code>Steam/steamapps/common/Half-Life/czero/Save</code>.
+        The helper only creates, rewrites and deletes <code>CZProfile-*.czp</code> files there. It never touches anything else of the game.</p>
+      <div class="row">
+        <label for="save-dir" class="sr-only">Save folder</label>
+        <input id="save-dir" class="mono grow" spellcheck="false" placeholder="Full path of your Save folder">
+        <button type="button" id="save-dir-browse" class="ghost">Browse…</button>
+        <button type="button" id="save-dir-btn" class="primary">Save</button>
+      </div>
+      <p id="save-dir-status" class="status-line"></p>
+      <div class="where">
+        <p><b>Where is it?</b></p>
+        <ul>
+          <li>Steam on Windows: <code>C:\Program Files (x86)\Steam\steamapps\common\Half-Life\czero\Save</code></li>
+          <li>Steam on Linux: <code>/home/&lt;you&gt;/.local/share/Steam/steamapps/common/Half-Life/czero/Save</code></li>
+          <li>Steam library on another drive: <code>&lt;library&gt;/steamapps/common/Half-Life/czero/Save</code></li>
+          <li>Other installs: the <code>czero</code> folder of your game, then <code>Save</code>.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <h3>About</h3>
+      <dl class="about">
+        <dt>Version</dt><dd id="about-version"></dd>
+        <dt>Helper data</dt><dd class="mono" id="about-data"></dd>
+      </dl>
+      <p class="hint">Bundles, settings, backups and logs live in the helper data folder. Every profile the helper writes
+        or deletes is noted in <code>logs/helper-&lt;date&gt;.log</code> there.
+        The helper never reads the game's memory or files other than the career profiles.</p>
+    </section>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<dialog id="form-dialog" class="dialog wide">
+  <form method="dialog">
+    <h3 id="form-title"></h3>
+    <div id="form-body" class="form-body"></div>
+    <p id="form-error" class="status-line bad" hidden></p>
+    <div class="dialog-actions">
+      <button value="cancel" class="ghost" formnovalidate>Cancel</button>
+      <button value="ok" id="form-ok" class="primary">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog" class="dialog">
+  <form method="dialog">
+    <h3 id="dialog-title"></h3>
+    <p id="dialog-text"></p>
+    <input id="dialog-input" spellcheck="false" autocomplete="off">
+    <div class="dialog-actions">
+      <button value="cancel" class="ghost" formnovalidate>Cancel</button>
+      <button value="ok" id="dialog-ok" class="primary">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
