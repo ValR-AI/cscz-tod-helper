@@ -1,0 +1,69 @@
+# Publishes a release when main holds a version that is not released yet
+# (const Version in main.go). The programs are built here, on GitHub's
+# machines, with build.sh: the build is reproducible, so anyone can rebuild
+# the same commit and compare the SHA-256 with the release.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.7"
+          cache: false
+
+      - name: Read the version
+        id: version
+        run: |
+          version=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' main.go)
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "Version $version is already released."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test
+        if: steps.version.outputs.new == 'true'
+        run: go test ./...
+
+      - name: Build
+        if: steps.version.outputs.new == 'true'
+        run: sh build.sh
+
+      - name: Publish
+        if: steps.version.outputs.new == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          notes=release-notes/v$VERSION.md
+          test -f "$notes"
+          {
+            cat "$notes"
+            echo
+            echo '### SHA-256'
+            echo
+            echo '```'
+            cat dist/SHA256SUMS
+            echo '```'
+          } > notes.md
+          prerelease=
+          case "$VERSION" in 0.*) prerelease=--prerelease ;; esac
+          gh release create "v$VERSION" dist/cscz-tod-helper.exe dist/cscz-tod-helper dist/SHA256SUMS \
+            --target "$GITHUB_SHA" --title "CS:CZ ToD Helper $VERSION" --notes-file notes.md $prerelease

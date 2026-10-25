@@ -169,6 +169,9 @@ to the release.
 
 ### Same program as the release
 
+The release programs are built by GitHub itself, from the release's commit, with `build.sh`
+([`.github/workflows/release.yml`](.github/workflows/release.yml); the logs are in the Actions tab).
+
 The scripts pin the Go version (Go downloads it by itself the first time) and build with
 `-trimpath -buildvcs=false -ldflags="-s -w"` without C code, so every build of the same source is identical, on any
 computer. Compare your SHA-256 with the release's to prove the release is exactly this code:

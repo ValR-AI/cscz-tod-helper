@@ -48,7 +48,8 @@ so nobody can promise it, but nothing here touches what VAC watches.
 
 ## Check the program you downloaded
 
-The release files are built by `build.sh` / `build.bat` with:
+The release files are built by GitHub Actions from the release's commit
+([`.github/workflows/release.yml`](.github/workflows/release.yml)), with `build.sh`:
 
 ```
 GOTOOLCHAIN=go1.24.7 CGO_ENABLED=0 GOARCH=amd64 GOAMD64=v1
